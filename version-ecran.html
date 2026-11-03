@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Interview Answers</title>
+<style>
+  :root { --bg:#191919; --panel:#222; --text:#e8e8e8; --accent:#f19a3e; --green:#a6e3a1; --border:#333; }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:-apple-system,'Segoe UI',sans-serif; background:var(--bg); color:var(--text); }
+  .wrap { max-width:900px; margin:0 auto; padding:16px; }
+  h1 { font-size:1.2rem; color:var(--accent); margin:0 0 12px; display:flex; justify-content:space-between; align-items:center; }
+  button { background:var(--accent); color:#111; border:0; border-radius:8px; padding:12px 16px; font-weight:bold; font-size:1rem; cursor:pointer; }
+  button.secondary { background:#333; color:var(--text); font-size:.85rem; padding:8px 12px; }
+  button.green { background:var(--green); }
+  button:disabled { opacity:.5; cursor:default; }
+  textarea, input { width:100%; background:var(--panel); color:var(--text); border:1px solid var(--border); border-radius:8px; padding:12px; font-size:1rem; font-family:inherit; }
+  #question { min-height:90px; resize:vertical; }
+  .row { display:flex; gap:10px; margin:10px 0; flex-wrap:wrap; }
+  .row button { flex:1; min-width:200px; }
+  #setup { display:none; background:var(--panel); border:1px solid var(--border); border-radius:8px; padding:12px; margin-bottom:12px; }
+  #setup.open { display:block; }
+  #setup label { display:block; font-size:.8rem; color:var(--accent); margin:10px 0 4px; text-transform:uppercase; }
+  #setup textarea { min-height:100px; font-size:.85rem; }
+  #status { font-size:.85rem; color:#a6adc8; min-height:1.2em; margin:4px 0 10px; }
+  .card { background:var(--panel); border:1px solid var(--border); border-radius:10px; padding:16px; margin-bottom:14px; }
+  .q { color:#f38ba8; font-size:.95rem; margin-bottom:10px; }
+  .a p { font-size:1.25rem; line-height:1.6; margin:0 0 12px; color:#fff; }
+  .hint { font-size:.8rem; color:#6c7086; cursor:pointer; }
+  button.stop { background:#f38ba8; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Interview Answers <button class="secondary" onclick="toggleSetup()">⚙ Setup</button></h1>
+
+  <div id="setup">
+    <label>Anthropic API key</label>
+    <input type="password" id="apiKey" placeholder="sk-ant-...">
+    <label>Job description (optional)</label>
+    <textarea id="jobDesc" placeholder="Paste the job posting..."></textarea>
+    <label>Your resume (built in)</label>
+    <textarea id="resume"></textarea>
+    <div class="row"><button onclick="saveSetup()">Save</button></div>
+  </div>
+
+  <div class="row">
+    <button class="green" id="autoBtn" onclick="toggleAuto()">▶ Start — watch the interview screen</button>
+  </div>
+  <div id="status">Click Start, then choose the interview tab (or window) to share.</div>
+  <details style="margin-bottom:12px"><summary class="hint">Backup: type a question manually</summary>
+    <textarea id="question" placeholder="Type a question, then press Enter..."></textarea>
+  </details>
+  <div id="feed"></div>
+</div>
+
+<script>
+const BUILT_IN_RESUME = "Stanislas de Quénetain\nFinancial Lawyer — Investment Funds, Asset Management & Regulatory Compliance\nParis (remote)\nUCITS · AIFMD · Fund documentation · AMF / CSSF · AML/CFT · MiCA · ISDA / GMRA / GMSLA\n\nPROFILE\nFinancial lawyer with 15+ years in investment funds, asset management and capital markets, built at Goldman Sachs, JPMorgan, RBS, CACEIS and Natixis, and in regulated asset managers and crypto-asset service providers.\n- Fund documentation: led legal and regulatory documentation for UCITS and AIFs in France and Luxembourg (prospectuses, KIID / PRIIPs KID, fund regulations, SICAV articles, depositary and delegation agreements) with AMF and CSSF filings.\n- Asset-manager compliance: Chief Compliance Officer and co-founder of AMF-registered entities; designed and ran full compliance and AML/CFT programmes; currently Head of Compliance & Internal Control at an asset manager.\n- Securities regulation: AIFMD, UCITS, MiFID II, EMIR, SFTR, PRIIPs, FATCA, AMF General Regulation, MiCA.\n- Fund counterparties: negotiated trading, prime brokerage and financing documentation for hedge funds, SICAV / FCP, OEICs, unit trusts and Cayman / US / EU funds.\n- AI & fintech: builds AI-assisted legal and compliance workflows; hands-on with digital-asset regulation and on-chain compliance tooling.\nBilingual French / English (9 years in London). Available for remote contract work.\n\nEXPERIENCE\nMelanion Capital — Head of Compliance & Internal Control (RCCI) · Paris · Jun 2026 – present\n- Compliance and internal-control function of an AMF-authorised asset manager: compliance monitoring plan, controls, regulatory reporting and liaison with the AMF.\n- Oversight of fund-level compliance (UCITS / AIF rules), AML/CFT and conflicts-of-interest framework.\n\nNatixis — VP, Legal & Compliance · Paris · Apr 2024 – Jun 2026\n- Negotiated ISDA / CSA, GMRA, GMSLA and FBF agreements with asset managers, funds and institutional counterparties.\n- Drafted and reviewed private-debt documentation: facility, security, intercreditor and subordination agreements.\n- Contributed to the compliance framework and regulatory monitoring for capital-markets activities.\n\nCryptoSure — Chief Compliance Officer · Paris · Dec 2021 – Apr 2024\n- Built the full compliance programme of an AMF-registered asset manager / digital-asset service provider (PSAN): policies, procedures, controls and AMF relationship.\n- Ran AML/CFT, KYC/KYB and transaction monitoring; tracked MiCA and FATF developments and adapted the framework.\n\nYUZU — Co-Founder & Chief Compliance Officer · Paris · Dec 2021 – Mar 2023\n- Led the PSAN registration with the AMF; designed KYC / KYB / KYT and on-chain monitoring processes.\n\nCACEIS Bank — Head of Capital Markets Legal · Paris · Jul 2017 – Dec 2021\n- Led legal and regulatory documentation for UCITS and AIFs in France and Luxembourg: prospectuses, KIID / PRIIPs KID, fund regulations, SICAV articles of association, depositary and delegation agreements.\n- Handled AMF and CSSF regulatory filings and approvals for fund launches and changes.\n- Advised on AIFMD, UCITS, MiFID II, EMIR and SFTR; sat on compliance committees; managed a four-person legal team.\n\nJ.P. Morgan — Vice President, Legal · London · Jul 2014 – Jul 2017\n- Negotiated prime brokerage, clearing, execution, F&O and ISDA / CSA documentation for hedge funds and asset managers.\n- Advised on EMIR and FATCA implementation for fund clients.\n\nGoldman Sachs International — Legal Counsel · London · Aug 2010 – Mar 2013\n- Negotiated ISDA / CSA with Luxembourg and French SICAV / FCP, UK unit trusts and OEICs, and Cayman, US and EU hedge funds.\n- Main legal contact for French and UK asset managers; built and trained a three-person team in Bangalore.\n\nRoyal Bank of Scotland — Legal Counsel · London · Jul 2008 – Aug 2010\n- Documented trading relationships with pension funds, hedge funds and limited partnerships (UK, US, Cayman); drafted fund lifecycle documents (novations, confidentiality, terminations).\n\nEDUCATION & CERTIFICATIONS\n- AMF Professional Certification — 2021\n- AML/CFT Certification — KPMG, 2022\n- ESSEC Business School — Master in International Business Law & Management, 2004–05 (Merit). Thesis on hedge-fund structures under the French UCITS framework (OPCVM ARIA).\n- Université Paris XI — Master in European Business Law & Finance, 2003–04 (Merit)\n- Université Paris II Panthéon-Assas — Bachelor of Laws, 2002–03 (Erasmus, Warsaw)\n- Fudan University, Shanghai — Chinese language programme, 2013\n\nSKILLS & LANGUAGES\n- Investment funds & asset management law: UCITS, AIFMD, SICAV / FCP, Luxembourg funds, fund regulations and prospectuses, depositary and delegation agreements, PRIIPs KID.\n- Securities regulation & compliance: MiFID II, EMIR, SFTR, AMF General Regulation, CSSF, FATCA, AML/CFT, MiCA; compliance monitoring plans and internal control.\n- Legal drafting & review: fund documentation, ISDA / CSA, GMRA, GMSLA, prime brokerage, facility and security agreements.\n- Regulatory research & filings: AMF and CSSF filings, regulatory change analysis, PSAN registration.\n- Fintech & AI: digital-asset compliance (KYC / KYB / KYT, on-chain analytics); designs AI-assisted legal and compliance workflows.\n- Languages: French (native), English (fluent, 9 years in London), Chinese (basic).";
+const $ = id => document.getElementById(id);
+function load(k, d) { try { return localStorage.getItem(k) || d; } catch (e) { return d; } }
+$('apiKey').value = load('ia_key', '');
+$('jobDesc').value = load('ia_job', '');
+$('resume').value = load('ia_resume', BUILT_IN_RESUME);
+if (!$('apiKey').value) $('setup').classList.add('open');
+
+function toggleSetup() { $('setup').classList.toggle('open'); }
+function saveSetup() {
+  try {
+    localStorage.setItem('ia_key', $('apiKey').value.trim());
+    localStorage.setItem('ia_job', $('jobDesc').value);
+    localStorage.setItem('ia_resume', $('resume').value);
+  } catch (e) {}
+  $('setup').classList.remove('open');
+  setStatus('Saved.');
+}
+function setStatus(t) { $('status').innerText = t; }
+function esc(s) { const d = document.createElement('div'); d.innerText = s; return d.innerHTML; }
+
+$('question').addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); answerTyped(); }
+});
+
+function systemPrompt() {
+  return "You help a candidate answer job interview questions in English. Write the COMPLETE answer the candidate " +
+    "will read aloud: first person, natural confident spoken English, 120 to 180 words, 2 or 3 short paragraphs " +
+    "separated by a blank line, no lists, no markdown. Answer the question directly in the first sentence, then " +
+    "support it with concrete facts from the resume (institutions, years, regulations, results) linked to the job, " +
+    "and finish with a short closing sentence. If the question is technical (law, regulation, finance), give a " +
+    "precise, correct technical answer. Never invent experience that is not in the resume. Always answer in English.\n\n" +
+    "=== JOB DESCRIPTION ===\n" + ($('jobDesc').value.trim() || "(not provided)") + "\n\n" +
+    "=== RESUME ===\n" + ($('resume').value.trim() || BUILT_IN_RESUME);
+}
+
+function newCard(qText) {
+  const card = document.createElement('div');
+  card.className = 'card';
+  card.innerHTML = '<div class="q">' + esc(qText) + '</div><div class="a"><p>⏳ Writing the answer...</p></div>';
+  $('feed').prepend(card);
+  return card;
+}
+
+async function callClaude(content, onText) {
+  const key = $('apiKey').value.trim();
+  if (!key) { $('setup').classList.add('open'); throw new Error('Enter your API key in Setup first.'); }
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01',
+               'anthropic-dangerous-direct-browser-access': 'true' },
+    body: JSON.stringify({ model: 'claude-haiku-5-5', max_tokens: 1000, stream: true,
+                           system: systemPrompt(), messages: [{ role: 'user', content: content }] })
+  });
+  if (!res.ok) throw new Error('API error ' + res.status + ': ' + (await res.text()));
+  const reader = res.body.getReader(), dec = new TextDecoder();
+  let buf = '', text = '';
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buf += dec.decode(value, { stream: true });
+    const lines = buf.split('\n'); buf = lines.pop();
+    for (const line of lines) {
+      if (!line.startsWith('data:')) continue;
+      try {
+        const ev = JSON.parse(line.slice(5).trim());
+        if (ev.type === 'error') throw new Error(ev.error && ev.error.message);
+        if (ev.type === 'content_block_delta' && ev.delta && ev.delta.text) { text += ev.delta.text; onText(text); }
+      } catch (e) { if (e.message && !e.message.includes('JSON')) throw e; }
+    }
+  }
+  return text;
+}
+
+function render(card, text) {
+  card.querySelector('.a').innerHTML = text.split(/\n\s*\n/).filter(p => p.trim())
+    .map(p => '<p>' + esc(p.trim()) + '</p>').join('');
+}
+
+async function answerTyped() {
+  const q = $('question').value.trim();
+  if (!q) { setStatus('Type or paste a question first.'); return; }
+  const card = newCard(q);
+  $('question').value = '';
+  try { setStatus(''); await callClaude('Interview question:\n' + q, t => render(card, t)); }
+  catch (e) { card.querySelector('.a').innerHTML = '<p>❌ ' + esc(e.message) + '</p>'; }
+}
+
+// ---- Mode automatique : surveille l'écran et détecte les nouvelles questions ----
+let stream = null, video = null, timer = null, busy = false, lastSig = null, lastQuestion = '';
+
+function frameCanvas(maxW) {
+  const c = document.createElement('canvas');
+  const scale = Math.min(1, maxW / video.videoWidth);
+  c.width = Math.max(1, Math.round(video.videoWidth * scale));
+  c.height = Math.max(1, Math.round(video.videoHeight * scale));
+  c.getContext('2d').drawImage(video, 0, 0, c.width, c.height);
+  return c;
+}
+// Petite empreinte de l'écran pour savoir s'il a changé (évite d'appeler Claude pour rien)
+function signature() {
+  const c = frameCanvas(64);
+  const d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data;
+  const sig = [];
+  for (let i = 0; i < d.length; i += 4) sig.push((d[i] + d[i + 1] + d[i + 2]) / 3);
+  return sig;
+}
+function changed(a, b) {
+  if (!a || !b || a.length !== b.length) return true;
+  let diff = 0;
+  for (let i = 0; i < a.length; i++) if (Math.abs(a[i] - b[i]) > 25) diff++;
+  return diff / a.length > 0.02; // plus de 2 % de l'écran a changé
+}
+
+async function toggleAuto() {
+  if (timer) { stopAuto(); return; }
+  try {
+    stream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: false });
+    video = document.createElement('video');
+    video.srcObject = stream; video.muted = true;
+    await video.play();
+    stream.getVideoTracks()[0].addEventListener('ended', stopAuto);
+    $('autoBtn').innerText = '■ Stop watching';
+    $('autoBtn').className = 'stop';
+    setStatus('👀 Watching the screen... a new question will be answered automatically.');
+    lastSig = null;
+    timer = setInterval(tick, 2000);
+    tick();
+  } catch (e) { setStatus('Screen sharing was not started: ' + (e.message || e)); }
+}
+
+function stopAuto() {
+  clearInterval(timer); timer = null;
+  if (stream) stream.getTracks().forEach(t => t.stop());
+  stream = null;
+  $('autoBtn').innerText = '▶ Start — watch the interview screen';
+  $('autoBtn').className = 'green';
+  setStatus('Stopped.');
+}
+
+async function tick() {
+  if (busy || !video || !video.videoWidth) return;
+  const sig = signature();
+  if (!changed(sig, lastSig)) return;
+  lastSig = sig;
+  busy = true;
+  let card = null;
+  try {
+    const img = frameCanvas(1600).toDataURL('image/jpeg', 0.8).split(',')[1];
+    const content = [
+      { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: img } },
+      { type: 'text', text: 'This is a live screenshot of my job interview. Find the interview question currently ' +
+        'shown (on screen, in captions or in a transcript; take the latest one). ' +
+        'The previous question already answered was: "' + (lastQuestion || 'none') + '". ' +
+        'If there is no question, or it is the same question as the previous one, reply with exactly: NONE. ' +
+        'Otherwise reply in exactly this format: first line "Q: <the question>", then a blank line, then the answer as specified.' }
+    ];
+    await callClaude(content, t => {
+      const trimmed = t.trim();
+      if (!trimmed.startsWith('Q:')) return;           // NONE ou pas encore de question
+      if (!card) card = newCard('');
+      const q = trimmed.split('\n')[0].replace(/^Q:\s*/, '');
+      card.querySelector('.q').innerText = q;
+      render(card, trimmed.replace(/^Q:.*\n?/, ''));
+      lastQuestion = q;
+    });
+  } catch (e) {
+    setStatus('❌ ' + (e.message || e));
+  } finally { busy = false; }
+}
+</script>
+</body>
+</html>
