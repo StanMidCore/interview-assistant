@@ -190,6 +190,13 @@
            margin-top: 3px;
        }
        .suggestion-text { white-space: normal; }
+       .b1 { font-size: 1.25rem; font-weight: bold; color: #fff; line-height: 1.45; margin: 14px 0 6px; padding-left: 18px; text-indent: -18px; }
+       .b1:first-child { margin-top: 0; }
+       .b1::before { content: "• "; color: var(--accent-color); }
+       .b2 { font-size: 1.05rem; color: #cdd6f4; margin: 4px 0 2px 26px; padding-left: 16px; text-indent: -16px; }
+       .b2::before { content: "◦ "; color: var(--accent-green); }
+       .b3 { font-size: 0.98rem; color: #bac2de; margin: 2px 0 2px 52px; padding-left: 14px; text-indent: -14px; }
+       .b3::before { content: "– "; color: #6c7086; }
        .answer-par {
            font-size: 1.25rem;
            line-height: 1.65;
@@ -254,6 +261,7 @@
            .right-column > .panel-title { display: none; }
            .message-block { padding: 10px; }
            .answer-par { font-size: 1.15rem; line-height: 1.55; }
+           .b1 { font-size: 1.1rem; } .b2 { margin-left: 14px; } .b3 { margin-left: 30px; }
        }
    </style>
 </head>
@@ -567,11 +575,13 @@
 
        // Mise en forme du plan : lignes « 1. » en gros, sous-points « a. » en retrait
        function renderPlan(text) {
-           // Réponse rédigée : un paragraphe par bloc de texte, en gros pour une lecture facile
-           return text.split(/\n\s*\n/).map(function(par) {
-               const t = par.trim();
-               if (!t) return '';
-               return '<p class="answer-par">' + escapeHtml(t) + '</p>';
+           // Puces imbriquées : niveau 1 = phrase à lire (gros), niveaux 2-3 = éléments pour développer
+           return text.split('\n').map(function(line) {
+               if (!line.trim()) return '';
+               const indent = line.match(/^\s*/)[0].replace(/\t/g, '  ').length;
+               const level = indent >= 4 ? 3 : (indent >= 2 ? 2 : 1);
+               const t = line.trim().replace(/^[-•*]\s*/, '');
+               return '<div class="b' + level + '">' + escapeHtml(t) + '</div>';
            }).join('');
        }
 
@@ -598,14 +608,18 @@
                "unintelligible, reply ONLY with: SKIP\n" +
                "Only write an answer if the utterance is a question, request or scenario from the interviewer " +
                "(recruiter or AI interviewer). When in doubt, reply SKIP. Never ask the candidate clarifying questions.\n" +
-               "STEP 2: write the COMPLETE answer the candidate will read aloud, in English, first person:\n" +
-               "- 120 to 180 words, in 2 or 3 short paragraphs separated by a blank line.\n" +
-               "- Natural, confident spoken English: short sentences, easy to read aloud, contractions allowed " +
-               "(I've, I'm), no jargon overload, no lists, no bullet points.\n" +
-               "- Open with a sentence that answers the question directly, then support it with the strongest " +
-               "concrete facts from the resume (institutions, years, regulations, results) linked to the job " +
-               "requirements, and end with a short closing sentence that ties back to the role.\n" +
-               "Be fast and direct. Never invent experience that is not in the resume. Start directly with the answer itself, " +
+               "STEP 2: write the answer as NESTED BULLET POINTS in English, first person, easy to read live:\n" +
+               "- Level 1 lines start with '- ' (no indent). Each level-1 bullet is ONE complete, natural spoken sentence " +
+               "the candidate can read aloud as is (max 30 words). Use 2 or 3 level-1 bullets: the first answers the question directly.\n" +
+               "- Level 2 lines start with 2 spaces then '- '; level 3 lines start with 4 spaces then '- '. They are short " +
+               "fragments (3 to 15 words) grouping concrete facts from the resume to elaborate on, organised logically " +
+               "(by location, period, institution or theme), e.g. '  - In London:' then '    - Goldman Sachs: negotiated ISDA/CSA for hedge funds'.\n" +
+               "- Each sub-bullet states the institution or topic, what was done, and the skill or result gained, linked to the job.\n" +
+               "- Maximum 3 levels, about 8 to 14 lines in total. No paragraphs, no numbering, no markdown (no asterisks, no bold).\n" +
+               "Example structure:\n- I've been a lawyer for 15 years in Paris and London, which gave me a deep understanding of both buy-side and sell-side.\n" +
+               "  - In London:\n    - Goldman Sachs: ...\n    - JPMorgan: ...\n  - In Paris:\n    - CACEIS: ...\n    - Melanion Capital: ...\n" +
+               "- (second spoken sentence)\n  - (supporting facts)\n" +
+               "Be fast and direct. Never invent experience that is not in the resume. Start directly with the first '- ' bullet, " +
                "no preamble, no title, no markdown (no asterisks, no bold).\n\n" +
                "=== JOB DESCRIPTION ===\n" + (jobDesc || "(not provided)") + "\n\n" +
                "=== CANDIDATE RESUME / SKILLS ===\n" + (resume || "(not provided)");
