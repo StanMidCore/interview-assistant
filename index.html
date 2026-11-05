@@ -608,17 +608,13 @@
                "unintelligible, reply ONLY with: SKIP\n" +
                "Only write an answer if the utterance is a question, request or scenario from the interviewer " +
                "(recruiter or AI interviewer). When in doubt, reply SKIP. Never ask the candidate clarifying questions.\n" +
-               "STEP 2: write the answer as NESTED BULLET POINTS in English, first person, easy to read live:\n" +
-               "- Level 1 lines start with '- ' (no indent). Each level-1 bullet is ONE complete, natural spoken sentence " +
-               "the candidate can read aloud as is (max 30 words). Use 2 or 3 level-1 bullets: the first answers the question directly.\n" +
-               "- Level 2 lines start with 2 spaces then '- '; level 3 lines start with 4 spaces then '- '. They are short " +
-               "fragments (3 to 15 words) grouping concrete facts from the resume to elaborate on, organised logically " +
-               "(by location, period, institution or theme), e.g. '  - In London:' then '    - Goldman Sachs: negotiated ISDA/CSA for hedge funds'.\n" +
-               "- Each sub-bullet states the institution or topic, what was done, and the skill or result gained, linked to the job.\n" +
-               "- Maximum 3 levels, about 8 to 14 lines in total. No paragraphs, no numbering, no markdown (no asterisks, no bold).\n" +
-               "Example structure:\n- I've been a lawyer for 15 years in Paris and London, which gave me a deep understanding of both buy-side and sell-side.\n" +
-               "  - In London:\n    - Goldman Sachs: ...\n    - JPMorgan: ...\n  - In Paris:\n    - CACEIS: ...\n    - Melanion Capital: ...\n" +
-               "- (second spoken sentence)\n  - (supporting facts)\n" +
+               "STEP 2: write the answer as 2 or 3 BULLET POINTS in English, first person, easy to read aloud live:\n" +
+               "- Each bullet is ONE line starting with '- ' (no indentation, no sub-bullets).\n" +
+               "- Each bullet contains 2 or 3 SHORT sentences (max 15 words each) that the candidate reads as is.\n" +
+               "- Bullet 1 answers the question directly. Bullets 2 and 3 give the strongest concrete facts from the resume " +
+               "(institutions, roles, regulations, results) linked to the job, and the last sentence ties back to the role.\n" +
+               "- No paragraphs, no numbering, no markdown (no asterisks, no bold).\n" +
+               "Example: '- I have been a financial lawyer for 15 years. I worked in London and Paris. This gave me both buy-side and sell-side expertise.'\n" +
                "Be fast and direct. Never invent experience that is not in the resume. Start directly with the first '- ' bullet, " +
                "no preamble, no title, no markdown (no asterisks, no bold).\n\n" +
                "=== JOB DESCRIPTION ===\n" + (jobDesc || "(not provided)") + "\n\n" +
