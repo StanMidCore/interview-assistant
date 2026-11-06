@@ -238,6 +238,8 @@
        }
        .voice-box { font-size: 0.8rem; color: #a6adc8; margin-top: 8px; text-align: center; }
        .voice-box input { width: 100%; }
+       .right-column { position: relative; }
+       .new-btn { display: none; position: absolute; right: 24px; bottom: 60px; z-index: 5; box-shadow: 0 2px 10px rgba(0,0,0,.5); }
        .mobile-only { display: none; }
        .btn-setup { background: #333; color: #e0e0e0; padding: 6px 12px; }
 
@@ -304,6 +306,7 @@
        <!-- Colonne Droite : Transcription et Suggestions en continu -->
        <div class="panel right-column">
            <div class="panel-title">Questions & Suggested Answers</div>
+           <button id="newBtn" class="btn new-btn" onclick="jumpToLatest()">↓ New answer</button>
            <div class="feed-container" id="feedContainer">
                <!-- Les blocs s'ajoutent ici dynamiquement -->
            </div>
@@ -511,6 +514,27 @@
            }
        }
 
+       // Pas de défilement automatique : l'utilisateur reste où il est.
+       // Si une nouvelle réponse arrive hors de vue, un bouton « New answer » apparaît.
+       function notifyNew() {
+           const feed = document.getElementById('feedContainer');
+           const atBottom = feed.scrollHeight - feed.scrollTop - feed.clientHeight < 40;
+           if (!atBottom) document.getElementById('newBtn').style.display = 'block';
+       }
+       function jumpToLatest() {
+           const feed = document.getElementById('feedContainer');
+           const blocks = feed.querySelectorAll('.message-block');
+           const last = blocks[blocks.length - 1];
+           if (last) last.scrollIntoView({ behavior: 'smooth', block: 'start' });
+           document.getElementById('newBtn').style.display = 'none';
+       }
+       document.addEventListener('DOMContentLoaded', function() {
+           document.getElementById('feedContainer').addEventListener('scroll', function() {
+               const f = this;
+               if (f.scrollHeight - f.scrollTop - f.clientHeight < 40) document.getElementById('newBtn').style.display = 'none';
+           });
+       });
+
        // Échappement HTML pour l'affichage sécurisé du texte
        function escapeHtml(str) {
            const div = document.createElement('div');
@@ -545,7 +569,7 @@
            line.appendChild(label);
            line.appendChild(btn);
            feed.appendChild(line);
-           feed.scrollTop = feed.scrollHeight;
+           notifyNew();
        }
 
        // Crée un bloc question + suggestion dans le fil
@@ -565,7 +589,7 @@
                '<div class="suggestion-label">Suggested answer:</div>' +
                '<div class="text-content suggestion-text">⏳ Generating...</div>';
            feed.appendChild(block);
-           feed.scrollTop = feed.scrollHeight;
+           notifyNew();
 
            const target = block.querySelector('.suggestion-text');
            const context = history.slice(-5).filter(function(x) { return x !== question; }).slice(-4);
@@ -679,8 +703,6 @@
                                if ('SKIP'.startsWith(text.trim())) continue; // on attend de savoir si c'est un SKIP
                                if (text.trim().startsWith('SKIP')) continue;
                                target.innerHTML = renderPlan(text);
-                               const feed = document.getElementById('feedContainer');
-                               feed.scrollTop = feed.scrollHeight;
                            }
                        } catch (e) { /* ligne incomplète ignorée */ }
                    }
