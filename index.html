@@ -681,8 +681,28 @@
                "with 2 or 3 sub-bullets + conclusion. Do not announce the plan.\n" +
                "- STANDARD question (motivation, background, behavioural, 'tell me about a time'): opening line with 2 " +
                "announcing sub-bullets, then 2 points, then conclusion.\n" +
-               "- TECHNICAL question (law, regulation, finance, case study): opening line with 3 announcing sub-bullets, " +
-               "then 3 points, then conclusion.\n" +
+               "- TECHNICAL question (law, regulation, finance, contract scenario, case study): opening line with 3 announcing " +
+               "sub-bullets, then EXACTLY 3 points in this fixed order, then conclusion:\n" +
+               "  point 1 = THE ISSUE: what is really at stake and the risk for each side;\n" +
+               "  point 2 = THE LEVERS: each sub-bullet NAMES one specific lever with its precise market term " +
+               "(e.g. for NAV triggers: lookbacks, averaging, fallbacks; for collateral: minimum transfer amount, independent amount, " +
+               "haircuts; for a weak netting opinion: entity and branch selection, a local-law master agreement, automatic early " +
+               "termination). Never stay generic: name the tool and say in a few words what it does;\n" +
+               "  point 3 = MY RECOMMENDATION: what I would actually do or negotiate, commercially; its 3rd sub-bullet is ALWAYS " +
+               "the edge case, starting with 'The edge case is'.\n" +
+               "- AI-EVALUATION question (reviewing or validating AI outputs, annotation guidelines, rubrics, grading criteria, " +
+               "span selection): treat it as TECHNICAL, but give a REPEATABLE METHOD that another reviewer could apply the same way:\n" +
+               "  point 1 = THE CORE RULE OR METHOD (e.g. for omission checks: a clause inventory per contract type, then a " +
+               "comparison with an expert reference issue list, scoring recall (what was missed) separately from precision " +
+               "(what was wrong or invented); for span selection: the smallest span that is still complete, trigger plus condition " +
+               "plus consequence);\n" +
+               "  point 2 = THE CRITERIA: concrete checks or inclusion and exclusion criteria (e.g. indemnity: scope, carve-outs, " +
+               "interaction with the cap; limitation of liability: cap, exclusions for fraud and gross negligence, consequential loss; " +
+               "termination: triggers, cure periods, survival; cross-reference checks on defined terms and schedule overrides; " +
+               "severity tagging; for spans: include the operative wording, the threshold and same-sentence provisos, exclude " +
+               "headings, numbering and boilerplate);\n" +
+               "  point 3 = EDGE CASES AND A CONCRETE EXAMPLE (e.g. a clause split across sentences, a schedule election that " +
+               "overrides the printed form, overlapping labels), with one short worked example.\n" +
                "B) STRUCTURE (one line per sentence):\n" +
                "1) OPENING: one top-level line '- ' with ONE short sentence that answers the question directly. For standard " +
                "and technical questions, follow it with sub-bullets '  - ' (two spaces before the dash) announcing the points, " +
@@ -703,11 +723,15 @@
                "- No headings or labels (never write 'Introduction', 'Point 1', 'Conclusion'), no numbering, no blank lines.\n" +
                "D) CONTENT:\n" +
                "- Technical question: precise and legally correct answer (rule, exceptions, practical consequences). " +
+               "Favour specific, named mechanisms over general principles, and give the commercial angle: how the point is " +
+               "actually negotiated in practice. " +
                "Add ONE sub-bullet of lived experience ('I've negotiated this kind of clause many times.') ONLY if the resume " +
                "genuinely supports it.\n" +
                "- Question about the candidate: the strongest concrete facts from the resume (institutions, roles, regulations, " +
                "results) linked to the job.\n" +
                "- Never invent experience that is not in the resume.\n" +
+               "- NO REPETITION: every line must add a new fact, lever or step. Never restate an earlier point in other words; " +
+               "the conclusion wraps up in new words instead of listing the points again.\n" +
                "- REFERENCES: cite an article number, a case name, a date or a figure ONLY if you are certain it is correct. " +
                "Otherwise describe the rule without the reference ('the GDPR requires...', 'English courts have held...'). " +
                "A wrong reference in front of a lawyer is far worse than no reference.\n" +
