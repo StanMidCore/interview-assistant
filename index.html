@@ -350,6 +350,7 @@
        let isListening = false;
        let silenceTimer = null;
        let history = []; // derniers propos entendus, pour le contexte
+       let lastExchange = null; // dernière question + réponse suggérée, envoyées en coulisse pour les relances
 
        // Récupérer les données stockées au chargement
        document.getElementById('apiKey').value = localStorage.getItem('anthropic_key') || '';
@@ -707,6 +708,14 @@
                "- Question about the candidate: the strongest concrete facts from the resume (institutions, roles, regulations, " +
                "results) linked to the job.\n" +
                "- Never invent experience that is not in the resume.\n" +
+               "- REFERENCES: cite an article number, a case name, a date or a figure ONLY if you are certain it is correct. " +
+               "Otherwise describe the rule without the reference ('the GDPR requires...', 'English courts have held...'). " +
+               "A wrong reference in front of a lawyer is far worse than no reference.\n" +
+               "E) FOLLOW-UPS: you may receive the previous question and the answer you suggested for it. " +
+               "If the new utterance is a follow-up to it ('Can you give an example?', 'Why?', 'And in that case?', " +
+               "'What would you do differently?'), treat it as a SIMPLE question: no announced plan, build on the previous " +
+               "answer without repeating it, and stay consistent with it. If the utterance simply repeats or paraphrases " +
+               "that previous suggested answer, it is the candidate speaking: reply SKIP.\n" +
                "Example (standard question):\n" +
                "- Yes, I've led **regulatory projects** end to end.\n" +
                "  - First, I'll talk about my time at **CACEIS**.\n" +
@@ -731,13 +740,14 @@
                        'anthropic-dangerous-direct-browser-access': 'true'
                    },
                    body: JSON.stringify({
-                       model: 'claude-haiku-5-5',
+                       model: 'claude-sonnet-5-5',
                        max_tokens: 1000,
                        thinking: { type: 'disabled' },
                        stream: true,
                        // Mise en cache du prompt (consignes + CV + offre) : réponses plus rapides et moins chères
                        system: [{ type: 'text', text: systemPrompt, cache_control: { type: 'ephemeral' } }],
                        messages: [{ role: 'user', content:
+                           (lastExchange ? "Previous interviewer question:\n" + lastExchange.q + "\n\nAnswer you suggested for it (the candidate probably said something close):\n" + lastExchange.a + "\n\n" : "") +
                            (context && context.length ? "Utterances heard just before (context):\n- " + context.join("\n- ") + "\n\n" : "") +
                            "Utterance just heard:\n" + question + "\n\n(Answer in English only.)" +
                            (forced ? "\n\nCONFIRMED BY THE CANDIDATE: this utterance comes from the interviewer. Do not reply SKIP; write the answer." : "") }]
@@ -789,6 +799,9 @@
                    block.remove(); // Claude pense que c'est le candidat : on le montre en gris avec le bouton
                    showIgnored(question);
                    return;
+               }
+               if (text.trim()) {
+                   lastExchange = { q: question, a: text.replace(/\*\*/g, '').trim() };
                }
                if (!text) {
                    target.innerText = "⚠️ Claude returned no text (reason: " + (stopReason || "unknown") + "). Try again.";
