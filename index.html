@@ -193,7 +193,7 @@
        .b1 { font-size: 1.25rem; font-weight: bold; color: #fff; line-height: 1.45; margin: 14px 0 6px; padding-left: 18px; text-indent: -18px; }
        .b1:first-child { margin-top: 0; }
        .b1::before { content: "• "; color: var(--accent-color); }
-       .b2 { font-size: 1.05rem; color: #cdd6f4; margin: 4px 0 2px 26px; padding-left: 16px; text-indent: -16px; }
+       .b2 { font-size: 1.15rem; color: #e6e9f5; line-height: 1.45; margin: 4px 0 2px 26px; padding-left: 16px; text-indent: -16px; }
        .b2::before { content: "◦ "; color: var(--accent-green); }
        .b3 { font-size: 0.98rem; color: #bac2de; margin: 2px 0 2px 52px; padding-left: 14px; text-indent: -14px; }
        .b3::before { content: "– "; color: #6c7086; }
@@ -632,15 +632,32 @@
                "unintelligible, reply ONLY with: SKIP\n" +
                "Only write an answer if the utterance is a question, request or scenario from the interviewer " +
                "(recruiter or AI interviewer). When in doubt, reply SKIP. Never ask the candidate clarifying questions.\n" +
-               "STEP 2: write the answer as 2 or 3 BULLET POINTS in English, first person, easy to read aloud live:\n" +
-               "- Each bullet is ONE line starting with '- ' (no indentation, no sub-bullets).\n" +
-               "- Each bullet contains 2 or 3 SHORT sentences (max 15 words each) that the candidate reads as is.\n" +
-               "- Bullet 1 answers the question directly. Bullets 2 and 3 give the strongest concrete facts from the resume " +
-               "(institutions, roles, regulations, results) linked to the job, and the last sentence ties back to the role.\n" +
-               "- No paragraphs, no numbering, no markdown (no asterisks, no bold).\n" +
-               "Example: '- I have been a financial lawyer for 15 years. I worked in London and Paris. This gave me both buy-side and sell-side expertise.'\n" +
-               "Be fast and direct. Never invent experience that is not in the resume. Start directly with the first '- ' bullet, " +
-               "no preamble, no title, no markdown (no asterisks, no bold).\n\n" +
+               "STEP 2: write the answer in English, first person, to be read aloud live, with EXACTLY this structure:\n" +
+               "1) INTRODUCTION: one top-level line '- ' with ONE short sentence that answers the question directly, " +
+               "followed by 2 or 3 sub-bullets '  - ' (two spaces before the dash) announcing the points you will develop, " +
+               "each sub-bullet being ONE short sentence.\n" +
+               "2) DEVELOPMENT: 2 or 3 points, in the order announced. Each point is one top-level line '- ' with ONE short " +
+               "introductory sentence, followed by EXACTLY 3 sub-bullets '  - ', each ONE short sentence.\n" +
+               "3) CONCLUSION: one top-level line '- ' made of EXACTLY 2 short sentences that wrap up and tie back to the role.\n" +
+               "Rules: every sentence is short (max 15 words), simple spoken English, contractions allowed. " +
+               "No headings or labels (do not write 'Introduction', 'Point 1' or 'Conclusion'), no numbering, no paragraphs, " +
+               "no markdown (no asterisks, no bold), no blank lines.\n" +
+               "Content: if the question is technical (law, regulation, finance, a case study), give a precise and legally " +
+               "correct answer: rule, exceptions, practical consequences; use the resume only if it genuinely helps. " +
+               "If the question is about the candidate, use the strongest concrete facts from the resume " +
+               "(institutions, roles, regulations, results) linked to the job.\n" +
+               "Example of the expected layout:\n" +
+               "- Yes, I have led several regulatory projects end to end.\n" +
+               "  - I'll start with my role at CACEIS.\n" +
+               "  - Then I'll explain what I built at an AMF-licensed firm.\n" +
+               "- At CACEIS, I ran regulatory change for five years.\n" +
+               "  - I managed a team of five people.\n" +
+               "  - We delivered several regulations in parallel.\n" +
+               "  - SFTR went live on time, during COVID.\n" +
+               "- (second point, same pattern with 3 sub-bullets)\n" +
+               "- That's why I'm comfortable owning complex projects. It's exactly what this role needs.\n" +
+               "Be fast and direct. Never invent experience that is not in the resume. Start directly with the first '- ' line, " +
+               "no preamble, no title.\n\n" +
                "=== JOB DESCRIPTION ===\n" + (jobDesc || "(not provided)") + "\n\n" +
                "=== CANDIDATE RESUME / SKILLS ===\n" + (resume || "(not provided)");
 
