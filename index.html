@@ -735,7 +735,8 @@
                        max_tokens: 1000,
                        thinking: { type: 'disabled' },
                        stream: true,
-                       system: systemPrompt,
+                       // Mise en cache du prompt (consignes + CV + offre) : réponses plus rapides et moins chères
+                       system: [{ type: 'text', text: systemPrompt, cache_control: { type: 'ephemeral' } }],
                        messages: [{ role: 'user', content:
                            (context && context.length ? "Utterances heard just before (context):\n- " + context.join("\n- ") + "\n\n" : "") +
                            "Utterance just heard:\n" + question + "\n\n(Answer in English only.)" +
