@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
    <meta charset="UTF-8">
-   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
    <title>Interview Assistant (Claude)</title>
    <style>
        :root {
@@ -197,6 +197,11 @@
        .b2::before { content: "◦ "; color: var(--accent-green); }
        .b3 { font-size: 0.98rem; color: #bac2de; margin: 2px 0 2px 52px; padding-left: 14px; text-indent: -14px; }
        .b3::before { content: "– "; color: #6c7086; }
+       .b1 strong, .b2 strong, .b3 strong { color: var(--accent-color); font-weight: 800; }
+       .b2 strong { color: #ffd59e; }
+       .opener { font-size: 1.4rem; }
+       .concl { margin-top: 16px; padding-top: 12px; border-top: 1px solid #45475a; padding-left: 0; text-indent: 0; }
+       .concl::before { content: ""; }
        .answer-par {
            font-size: 1.25rem;
            line-height: 1.65;
@@ -264,6 +269,30 @@
            .message-block { padding: 10px; }
            .answer-par { font-size: 1.15rem; line-height: 1.55; }
            .b1 { font-size: 1.1rem; } .b2 { margin-left: 14px; } .b3 { margin-left: 30px; }
+       }
+
+       /* ===== iPhone en vertical : lisible d'un coup d'œil, sans zoom ni défilement horizontal ===== */
+       @media (max-width: 500px) and (orientation: portrait) {
+           html { -webkit-text-size-adjust: 100%; }
+           body {
+               font-family: -apple-system, 'SF Pro Text', 'Segoe UI', sans-serif;
+               padding: max(6px, env(safe-area-inset-top)) max(6px, env(safe-area-inset-right))
+                        max(6px, env(safe-area-inset-bottom)) max(6px, env(safe-area-inset-left));
+           }
+           .title { font-size: 0.95rem; }
+           .right-column { padding: 6px; }
+           .feed-container { padding-right: 0; }
+           .message-block { padding: 10px 10px 12px; border-radius: 10px; }
+           .question-label, .suggestion-label { font-size: 0.75rem; }
+           .message-block > .text-content:not(.suggestion-text) { font-size: 0.85rem; color: #a6adc8; }
+           .suggestion-text { overflow-wrap: anywhere; }
+           .b1 { font-size: 1.18rem; line-height: 1.4; margin: 14px 0 4px; padding-left: 14px; text-indent: -14px; }
+           .opener { font-size: 1.32rem; }
+           .b2 { font-size: 1.08rem; line-height: 1.4; margin: 5px 0 2px 8px; padding-left: 14px; text-indent: -14px; }
+           .b3 { margin-left: 18px; }
+           .concl { padding-left: 0; text-indent: 0; }
+           .new-btn { right: 12px; bottom: calc(16px + env(safe-area-inset-bottom)); padding: 12px 16px; font-size: 1rem; }
+           .btn-listen { padding: 16px; font-size: 1.05rem; }
        }
    </style>
 </head>
@@ -599,13 +628,25 @@
 
        // Mise en forme du plan : lignes « 1. » en gros, sous-points « a. » en retrait
        function renderPlan(text) {
-           // Puces imbriquées : niveau 1 = phrase à lire (gros), niveaux 2-3 = éléments pour développer
+           // Niveau 1 = phrase d'ouverture / de point, niveau 2 = sous-points, '> ' = conclusion
+           // Les mots-clés **...** sont mis en évidence ; un ** non refermé (en cours d'écriture) est masqué.
+           let firstTop = true;
            return text.split('\n').map(function(line) {
                if (!line.trim()) return '';
                const indent = line.match(/^\s*/)[0].replace(/\t/g, '  ').length;
-               const level = indent >= 4 ? 3 : (indent >= 2 ? 2 : 1);
-               const t = line.trim().replace(/^[-•*]\s*/, '');
-               return '<div class="b' + level + '">' + escapeHtml(t) + '</div>';
+               let t = line.trim();
+               let cls;
+               if (/^>/.test(t)) { cls = 'b1 concl'; t = t.replace(/^>\s*/, ''); }
+               else {
+                   const level = indent >= 4 ? 3 : (indent >= 2 ? 2 : 1);
+                   cls = 'b' + level;
+                   if (level === 1 && firstTop) { cls += ' opener'; firstTop = false; }
+                   t = t.replace(/^[-•*]\s+/, '');
+               }
+               let html = escapeHtml(t)
+                   .replace(/\*\*([^*]+?)\*\*/g, '<strong>$1</strong>')
+                   .replace(/\*+/g, '');
+               return '<div class="' + cls + '">' + html + '</div>';
            }).join('');
        }
 
@@ -632,32 +673,51 @@
                "unintelligible, reply ONLY with: SKIP\n" +
                "Only write an answer if the utterance is a question, request or scenario from the interviewer " +
                "(recruiter or AI interviewer). When in doubt, reply SKIP. Never ask the candidate clarifying questions.\n" +
-               "STEP 2: write the answer in English, first person, to be read aloud live, with EXACTLY this structure:\n" +
-               "1) INTRODUCTION: one top-level line '- ' with ONE short sentence that answers the question directly, " +
-               "followed by 2 or 3 sub-bullets '  - ' (two spaces before the dash) announcing the points you will develop, " +
-               "each sub-bullet being ONE short sentence.\n" +
-               "2) DEVELOPMENT: 2 or 3 points, in the order announced. Each point is one top-level line '- ' with ONE short " +
-               "introductory sentence, followed by EXACTLY 3 sub-bullets '  - ', each ONE short sentence.\n" +
-               "3) CONCLUSION: one top-level line '- ' made of EXACTLY 2 short sentences that wrap up and tie back to the role.\n" +
-               "Rules: every sentence is short (max 15 words), simple spoken English, contractions allowed. " +
-               "No headings or labels (do not write 'Introduction', 'Point 1' or 'Conclusion'), no numbering, no paragraphs, " +
-               "no markdown (no asterisks, no bold), no blank lines.\n" +
-               "Content: if the question is technical (law, regulation, finance, a case study), give a precise and legally " +
-               "correct answer: rule, exceptions, practical consequences; use the resume only if it genuinely helps. " +
-               "If the question is about the candidate, use the strongest concrete facts from the resume " +
-               "(institutions, roles, regulations, results) linked to the job.\n" +
-               "Example of the expected layout:\n" +
-               "- Yes, I have led several regulatory projects end to end.\n" +
-               "  - I'll start with my role at CACEIS.\n" +
-               "  - Then I'll explain what I built at an AMF-licensed firm.\n" +
-               "- At CACEIS, I ran regulatory change for five years.\n" +
-               "  - I managed a team of five people.\n" +
-               "  - We delivered several regulations in parallel.\n" +
-               "  - SFTR went live on time, during COVID.\n" +
+               "STEP 2: write the answer in English, first person. The candidate glances at it and SPEAKS it live, " +
+               "so it must sound like natural spoken English, not like a written list.\n" +
+               "A) LENGTH depends on the question:\n" +
+               "- SIMPLE question (yes/no, availability, salary, notice period, a quick fact): opening line + ONE point " +
+               "with 2 or 3 sub-bullets + conclusion. Do not announce the plan.\n" +
+               "- STANDARD question (motivation, background, behavioural, 'tell me about a time'): opening line with 2 " +
+               "announcing sub-bullets, then 2 points, then conclusion.\n" +
+               "- TECHNICAL question (law, regulation, finance, case study): opening line with 3 announcing sub-bullets, " +
+               "then 3 points, then conclusion.\n" +
+               "B) STRUCTURE (one line per sentence):\n" +
+               "1) OPENING: one top-level line '- ' with ONE short sentence that answers the question directly. For standard " +
+               "and technical questions, follow it with sub-bullets '  - ' (two spaces before the dash) announcing the points, " +
+               "one short sentence each. Occasionally (not every time) the opening may start with a short natural lead-in " +
+               "such as 'Let me break that down.' or 'Good question, it has two sides.'\n" +
+               "2) POINTS, in the announced order: each point is one top-level line '- ' with ONE short introductory sentence, " +
+               "followed by EXACTLY 3 sub-bullets '  - ', each ONE short sentence.\n" +
+               "3) CONCLUSION: one line starting with '> ' made of EXACTLY 2 short sentences that wrap up and tie back to the role.\n" +
+               "C) SPOKEN STYLE:\n" +
+               "- Every sentence is short (max 15 words), simple, contractions allowed (I've, it's, we'd).\n" +
+               "- Start sub-bullets with spoken connectors and vary them: 'First,', 'On top of that,', 'In practice,', " +
+               "'The catch is', 'For example,', 'That's why', 'And finally,'.\n" +
+               "- Write for the voice: no parentheses, no abbreviations or acronyms the candidate would not say aloud " +
+               "(write 'Article 45', not 'Art. 45'; spell out 'standard contractual clauses' the first time), no slashes, " +
+               "no tongue-twisting chains of nouns.\n" +
+               "- In EVERY line, wrap the 1 or 2 key words in double asterisks, e.g. **high-risk**. This is the ONLY markdown " +
+               "allowed; it lets the candidate glance at the key words and rephrase naturally.\n" +
+               "- No headings or labels (never write 'Introduction', 'Point 1', 'Conclusion'), no numbering, no blank lines.\n" +
+               "D) CONTENT:\n" +
+               "- Technical question: precise and legally correct answer (rule, exceptions, practical consequences). " +
+               "Add ONE sub-bullet of lived experience ('I've negotiated this kind of clause many times.') ONLY if the resume " +
+               "genuinely supports it.\n" +
+               "- Question about the candidate: the strongest concrete facts from the resume (institutions, roles, regulations, " +
+               "results) linked to the job.\n" +
+               "- Never invent experience that is not in the resume.\n" +
+               "Example (standard question):\n" +
+               "- Yes, I've led **regulatory projects** end to end.\n" +
+               "  - First, I'll talk about my time at **CACEIS**.\n" +
+               "  - Then, what I **built from scratch** at an AMF-licensed firm.\n" +
+               "- At CACEIS, I ran **regulatory change** for five years.\n" +
+               "  - In practice, I managed a **team of five**.\n" +
+               "  - On top of that, we delivered **several regulations** in parallel.\n" +
+               "  - For example, **SFTR** went live on time, during COVID.\n" +
                "- (second point, same pattern with 3 sub-bullets)\n" +
-               "- That's why I'm comfortable owning complex projects. It's exactly what this role needs.\n" +
-               "Be fast and direct. Never invent experience that is not in the resume. Start directly with the first '- ' line, " +
-               "no preamble, no title.\n\n" +
+               "> That's why I'm **comfortable** owning complex projects. It's exactly what **this role** needs.\n" +
+               "Be fast and direct. Start directly with the first '- ' line, no preamble, no title.\n\n" +
                "=== JOB DESCRIPTION ===\n" + (jobDesc || "(not provided)") + "\n\n" +
                "=== CANDIDATE RESUME / SKILLS ===\n" + (resume || "(not provided)");
 
