@@ -299,7 +299,7 @@
 <body>
 
    <div class="header">
-       <div class="title">Interview Assistant (Claude)</div>
+       <div class="title">Interview Assistant (Claude) <span id="appVersion" style="font-size:0.7rem;color:#a6adc8;font-weight:normal"></span></div>
        <button class="btn btn-setup mobile-only" onclick="document.body.classList.toggle('show-setup')">⚙ Setup</button>
        <div class="config-box">
            <input type="password" id="apiKey" placeholder="Anthropic API key (sk-ant-...)" />
@@ -349,6 +349,8 @@
        let recognition;
        let isListening = false;
        let silenceTimer = null;
+       const APP_VERSION = 'v13-11b';
+       document.getElementById('appVersion').innerText = APP_VERSION;
        let history = []; // derniers propos entendus, pour le contexte
        let lastExchange = null; // dernière question + réponse suggérée, envoyées en coulisse pour les relances
 
@@ -802,32 +804,49 @@
                "=== CANDIDATE RESUME / SKILLS ===\n" + (resume || "(not provided)");
 
            try {
-               const response = await fetch('https://api.anthropic.com/v1/messages', {
-                   method: 'POST',
-                   headers: {
-                       'content-type': 'application/json',
-                       'x-api-key': apiKey,
-                       'anthropic-version': '2023-06-01',
-                       'anthropic-dangerous-direct-browser-access': 'true'
-                   },
-                   body: JSON.stringify({
-                       model: 'claude-sonnet-5-5',
-                       max_tokens: 1500,
-                       thinking: { type: 'between_tools' }, // Sonnet 5.5 : pas de réflexion avant la réponse
-                       stream: true,
-                       // Mise en cache du prompt (consignes + CV + offre) : réponses plus rapides et moins chères
-                       system: [{ type: 'text', text: systemPrompt, cache_control: { type: 'ephemeral' } }],
-                       messages: [{ role: 'user', content:
-                           (lastExchange ? "Previous interviewer question:\n" + lastExchange.q + "\n\nAnswer you suggested for it (the candidate probably said something close):\n" + lastExchange.a + "\n\n" : "") +
-                           (context && context.length ? "Utterances heard just before (context):\n- " + context.join("\n- ") + "\n\n" : "") +
-                           "Utterance just heard:\n" + question + "\n\n(Answer in English only.)" +
-                           (forced ? "\n\nCONFIRMED BY THE CANDIDATE: this utterance comes from the interviewer. Do not reply SKIP; write the answer." : "") }]
-                   })
-               });
+               const payload = {
+                   model: 'claude-sonnet-5-5',
+                   max_tokens: 1500,
+                   thinking: { type: 'between_tools' }, // Sonnet 5.5 : pas de réflexion avant la réponse
+                   stream: true,
+                   // Mise en cache du prompt (consignes + CV + offre) : réponses plus rapides et moins chères
+                   system: [{ type: 'text', text: systemPrompt, cache_control: { type: 'ephemeral' } }],
+                   messages: [{ role: 'user', content:
+                       (lastExchange ? "Previous interviewer question:\n" + lastExchange.q + "\n\nAnswer you suggested for it (the candidate probably said something close):\n" + lastExchange.a + "\n\n" : "") +
+                       (context && context.length ? "Utterances heard just before (context):\n- " + context.join("\n- ") + "\n\n" : "") +
+                       "Utterance just heard:\n" + question + "\n\n(Answer in English only.)" +
+                       (forced ? "\n\nCONFIRMED BY THE CANDIDATE: this utterance comes from the interviewer. Do not reply SKIP; write the answer." : "") }]
+               };
+               const callApi = function() {
+                   return fetch('https://api.anthropic.com/v1/messages', {
+                       method: 'POST',
+                       cache: 'no-store',
+                       headers: {
+                           'content-type': 'application/json',
+                           'x-api-key': apiKey,
+                           'anthropic-version': '2023-06-01',
+                           'anthropic-dangerous-direct-browser-access': 'true'
+                       },
+                       body: JSON.stringify(payload)
+                   });
+               };
+               let response = await callApi();
+
+               // Filet de sécurité : si l'API refuse le réglage de réflexion, on réessaie une fois sans ce réglage
+               if (!response.ok && response.status === 400) {
+                   const err1 = await response.text();
+                   if (/thinking/i.test(err1)) {
+                       delete payload.thinking;
+                       response = await callApi();
+                   } else {
+                       target.innerText = "❌ API error (400) [" + APP_VERSION + "]: " + err1;
+                       return;
+                   }
+               }
 
                if (!response.ok) {
                    const err = await response.text();
-                   target.innerText = "❌ API error (" + response.status + "): " + err;
+                   target.innerText = "❌ API error (" + response.status + ") [" + APP_VERSION + "]: " + err;
                    return;
                }
 
