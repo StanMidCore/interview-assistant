@@ -330,8 +330,8 @@
                    <div>Interviewer voice if above <b id="thrVal">165</b> Hz
                        <input type="range" id="thr" min="120" max="230" value="165" oninput="setThreshold(this.value)"></div>
                    <div>Last voice heard: <b id="lastPitch">–</b></div>
-                   <div style="margin-top:6px">Answer after <b id="waitVal">3</b> s of silence
-                       <input type="range" id="waitRange" min="1.5" max="6" step="0.5" value="3" oninput="setWait(this.value)"></div>
+                   <div style="margin-top:6px">Answer after <b id="waitVal">2</b> s of silence
+                       <input type="range" id="waitRange" min="1.5" max="6" step="0.5" value="2" oninput="setWait(this.value)"></div>
                </div>
            </div>
        </div>
@@ -354,7 +354,7 @@
        let recognition;
        let isListening = false;
        let silenceTimer = null;
-       const APP_VERSION = 'v13-11c';
+       const APP_VERSION = 'v13-11d';
        document.getElementById('appVersion').innerText = APP_VERSION;
        let history = []; // derniers propos entendus, pour le contexte
        let lastExchange = null; // dernière question + réponse suggérée, envoyées en coulisse pour les relances
@@ -518,7 +518,7 @@
        // (aucun nouveau mot entendu), ou si l'utilisateur appuie sur « Answer now ».
        let pendingParts = [];
        let commitTimer = null;
-       let waitMs = parseFloat(localStorage.getItem('wait_s') || '3') * 1000;
+       let waitMs = parseFloat(localStorage.getItem('wait_s') || '2') * 1000;
        document.getElementById('waitRange').value = waitMs / 1000;
        document.getElementById('waitVal').innerText = waitMs / 1000;
        function setWait(v) {
