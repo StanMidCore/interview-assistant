@@ -246,6 +246,19 @@
        .right-column { position: relative; }
        .new-btn { display: none; position: absolute; right: 24px; bottom: 60px; z-index: 5; box-shadow: 0 2px 10px rgba(0,0,0,.5); }
        .mobile-only { display: none; }
+       /* ===== Mode entraînement ===== */
+       .practice-bar { display: none; margin-bottom: 8px; padding: 8px; border: 1px solid var(--accent-color); border-radius: 8px; }
+       body.practice .practice-bar { display: block; }
+       body.practice .mic-panel, body.practice #currentTranscription .answer-now, body.practice #ignoredBar { display: none !important; }
+       body.practice #practiceToggle { background: var(--accent-color); color: #11111b; }
+       #practiceStatus { font-size: 0.85rem; color: #a6adc8; display: block; margin-bottom: 6px; }
+       .practice-btns { display: flex; gap: 6px; }
+       .practice-btns .btn { flex: 1; padding: 10px 6px; font-size: 0.9rem; }
+       .my-answer { font-size: 0.95rem; color: #cdd6f4; font-style: italic; white-space: pre-wrap; }
+       .fb-score { font-size: 1.3rem; font-weight: 800; color: var(--accent-color); margin: 4px 0 6px; }
+       .fb-good { color: var(--accent-green); margin: 3px 0; }
+       .fb-bad { color: #f38ba8; margin: 3px 0; }
+       .fb-model { margin-top: 12px; border-top: 1px dashed var(--border-color); padding-top: 8px; }
        .answer-now { float: right; padding: 6px 12px; margin-left: 8px; background: var(--accent-green); }
        #pendingText { color: #e6e9f5; font-style: normal; }
        /* Barre du bas compacte : une seule ligne, pour laisser la place aux réponses */
@@ -313,6 +326,7 @@
 
    <div class="header">
        <div class="title">Interview Assistant (Claude) <span id="appVersion" style="font-size:0.7rem;color:#a6adc8;font-weight:normal"></span></div>
+       <button id="practiceToggle" class="btn btn-setup" onclick="togglePractice()">🎯 Practice</button>
        <button class="btn btn-setup mobile-only" onclick="document.body.classList.toggle('show-setup')">⚙ Setup</button>
        <div class="config-box">
            <input type="password" id="apiKey" placeholder="Anthropic API key (sk-ant-...)" />
@@ -351,6 +365,14 @@
        <div class="panel right-column">
            <div class="panel-title">Questions & Suggested Answers</div>
            <button id="newBtn" class="btn new-btn" onclick="jumpToLatest()">↓ New answer</button>
+           <div id="practiceBar" class="practice-bar">
+               <span id="practiceStatus">Practice mode</span>
+               <div class="practice-btns">
+                   <button class="btn btn-setup" onclick="repeatQuestion()">🔁 Repeat</button>
+                   <button id="doneBtn" class="btn" onclick="doneAnswer()">✅ Done</button>
+                   <button class="btn btn-setup" onclick="nextQuestion()">⏭ Next</button>
+               </div>
+           </div>
            <div class="feed-container" id="feedContainer">
                <!-- Les blocs s'ajoutent ici dynamiquement -->
            </div>
@@ -366,7 +388,7 @@
        let recognition;
        let isListening = false;
        let silenceTimer = null;
-       const APP_VERSION = 'v13-11f';
+       const APP_VERSION = 'v13-11g';
        document.getElementById('appVersion').innerText = APP_VERSION;
        let history = []; // derniers propos entendus, pour le contexte
        let lastExchange = null; // dernière question + réponse suggérée, envoyées en coulisse pour les relances
@@ -393,6 +415,7 @@
            recognition.lang = 'en-US';
 
            recognition.onresult = function(event) {
+               if (practice.on) { practiceOnResult(event); return; }
                let interimTranscript = '';
                let finalTranscript = '';
 
@@ -707,29 +730,209 @@
            }).join('');
        }
 
-       // Appel à l'API Anthropic en streaming
-       async function askClaude(question, target, block, context, forced) {
+
+       // ===== MODE ENTRAÎNEMENT =====
+       // L'application lit une question probable à voix haute, l'utilisateur répond sans aide,
+       // puis Claude note la réponse, liste ce qui manque et montre la réponse modèle.
+       const practice = { on: false, questions: [], idx: -1, answering: false, parts: [], block: null };
+
+       function setPracticeStatus(t) { document.getElementById('practiceStatus').innerText = t; }
+
+       function togglePractice() {
+           practice.on = !practice.on;
+           document.body.classList.toggle('practice', practice.on);
+           if (practice.on) {
+               if (isListening && !practice.answering) toggleListening();   // coupe le mode direct
+               if (!practice.questions.length) generateQuestions(); else nextQuestion();
+           } else {
+               stopPracticeMic();
+               if (window.speechSynthesis) speechSynthesis.cancel();
+           }
+       }
+
+       // Appel générique à Claude en streaming (avec le même filet de sécurité sur le réglage de réflexion)
+       async function streamClaude(system, user, maxTokens, onText) {
            const apiKey = document.getElementById('apiKey').value.trim();
+           if (!apiKey) throw new Error("Please enter your Anthropic API key (Setup).");
+           const payload = { model: 'claude-sonnet-5-5', max_tokens: maxTokens, thinking: { type: 'between_tools' }, stream: true,
+                             system: [{ type: 'text', text: system, cache_control: { type: 'ephemeral' } }],
+                             messages: [{ role: 'user', content: user }] };
+           const call = function() {
+               return fetch('https://api.anthropic.com/v1/messages', { method: 'POST', cache: 'no-store',
+                   headers: { 'content-type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01',
+                              'anthropic-dangerous-direct-browser-access': 'true' },
+                   body: JSON.stringify(payload) });
+           };
+           let res = await call();
+           if (!res.ok && res.status === 400) {
+               const e1 = await res.text();
+               if (/thinking/i.test(e1)) { delete payload.thinking; res = await call(); }
+               else throw new Error("API error (400): " + e1);
+           }
+           if (!res.ok) throw new Error("API error (" + res.status + "): " + (await res.text()));
+           const reader = res.body.getReader(), dec = new TextDecoder();
+           let buf = '', text = '';
+           while (true) {
+               const r = await reader.read();
+               if (r.done) break;
+               buf += dec.decode(r.value, { stream: true });
+               const lines = buf.split('\n'); buf = lines.pop();
+               for (const line of lines) {
+                   if (!line.startsWith('data:')) continue;
+                   let evt;
+                   try { evt = JSON.parse(line.slice(5).trim()); } catch (e) { continue; }   // ligne incomplète
+                   if (evt.type === 'error') throw new Error((evt.error && evt.error.message) || 'Claude error');
+                   if (evt.type === 'content_block_delta' && evt.delta && evt.delta.text) { text += evt.delta.text; if (onText) onText(text); }
+               }
+           }
+           return text;
+       }
+
+       function contextBlock() {
            const jobDesc = document.getElementById('jobDescription').value.trim();
            const resume = document.getElementById('userResume').value.trim() || BUILT_IN_RESUME;
+           return "=== JOB DESCRIPTION ===\n" + (jobDesc || "(not provided: assume a remote legal-AI contractor role reviewing and " +
+                  "evaluating AI contract and regulatory analysis)") + "\n\n=== CANDIDATE RESUME ===\n" + resume;
+       }
 
-           if (!apiKey) {
-               target.innerText = "⚠️ Please enter your Anthropic API key (top right).";
-               return;
+       async function generateQuestions() {
+           setPracticeStatus('⏳ Preparing likely questions...');
+           const system = "You prepare realistic interview questions for a senior lawyer applying to the job below. " +
+               "Write 10 questions in English, phrased exactly as an AI interviewer would ask them, with concrete scenario details. " +
+               "Mix: 2 about background and motivation; 4 technical legal questions or contract scenarios tied to the job; " +
+               "2 about evaluating AI outputs (omission checks, rubrics, annotation or span-selection rules); 1 task-design question " +
+               "(break real legal work into a defined task with one deliverable); 1 decision-maker question (executive summary, " +
+               "decision ask, quantified exposure). Some technical questions should ask for a precise number of items ('top 3'). " +
+               "Output ONLY a JSON array of 10 strings, nothing else.\n\n" + contextBlock();
+           try {
+               const out = await streamClaude(system, "Generate the 10 questions now.", 1500, null);
+               const m = out.match(/\[[\s\S]*\]/);
+               const list = m ? JSON.parse(m[0]) : [];
+               if (!list.length) throw new Error("No questions returned.");
+               practice.questions = practice.questions.concat(list);
+               nextQuestion();
+           } catch (e) { setPracticeStatus('❌ ' + e.message); }
+       }
+
+       function speak(text, then) {
+           if (!window.speechSynthesis) { if (then) then(); return; }
+           speechSynthesis.cancel();
+           const u = new SpeechSynthesisUtterance(text);
+           u.lang = 'en-US'; u.rate = 1;
+           u.onend = function() { if (then) then(); };
+           u.onerror = function() { if (then) then(); };
+           speechSynthesis.speak(u);
+       }
+
+       function nextQuestion() {
+           if (!practice.on) return;
+           stopPracticeMic();
+           practice.idx++;
+           if (practice.idx >= practice.questions.length) { generateQuestions(); return; }
+           const q = practice.questions[practice.idx];
+           const feed = document.getElementById('feedContainer');
+           const block = document.createElement('div');
+           block.className = 'message-block';
+           block.innerHTML =
+               '<div class="question-label">Practice question ' + (practice.idx + 1) + ':</div>' +
+               '<div class="text-content" onclick="this.classList.toggle(\'q-open\')">' + escapeHtml(q) + '</div>' +
+               '<div class="suggestion-label">Your answer:</div>' +
+               '<div class="my-answer">…</div>' +
+               '<div class="suggestion-label">Feedback:</div>' +
+               '<div class="text-content suggestion-text fb">Answer aloud, then tap ✅ Done.</div>';
+           feed.appendChild(block);
+           practice.block = block;
+           block.scrollIntoView({ behavior: 'smooth', block: 'start' });
+           setPracticeStatus('🔊 Listen to the question...');
+           speak(q, startPracticeAnswer);
+       }
+
+       function repeatQuestion() {
+           if (practice.idx < 0) return;
+           stopPracticeMic();
+           setPracticeStatus('🔊 Listen to the question...');
+           speak(practice.questions[practice.idx], startPracticeAnswer);
+       }
+
+       function startPracticeAnswer() {
+           if (!practice.on) return;
+           practice.answering = true;
+           isListening = true;               // relance automatique de l'écoute pendant la réponse
+           try { recognition.start(); } catch (e) {}
+           keepScreenOn(true);
+           setPracticeStatus('🔴 Your turn: answer aloud, then tap ✅ Done.');
+       }
+
+       function stopPracticeMic() {
+           practice.answering = false;
+           isListening = false;
+           try { recognition.stop(); } catch (e) {}
+           document.getElementById('interimText').innerText = '...';
+       }
+
+       function practiceOnResult(event) {
+           if (!practice.answering) return;
+           let interim = '';
+           for (let i = event.resultIndex; i < event.results.length; ++i) {
+               if (event.results[i].isFinal) practice.parts.push(event.results[i][0].transcript.trim());
+               else interim += event.results[i][0].transcript;
            }
+           document.getElementById('interimText').innerText = interim ? tail(interim, 50) : '...';
+           if (practice.block) {
+               practice.block.querySelector('.my-answer').innerText =
+                   (practice.parts.join(' ') + (interim ? ' ' + interim : '')).trim() || '…';
+           }
+       }
 
-           const systemPrompt =
-               "LANGUAGE RULE: write your ENTIRE output in ENGLISH ONLY, whatever the language of the question, " +
-               "the resume or the job description. Never answer in French. " +
-               "You are a speaking coach helping a candidate during a live job interview conducted in English. " +
-               "The candidate will READ YOUR ANSWER ALOUD, word for word, so it must sound natural when spoken. " +
-               "STEP 1 (mandatory): the microphone may also pick up the candidate's own voice. Decide who is speaking. " +
-               "If the utterance is spoken by the CANDIDATE (first-person statement about themselves, their background, " +
-               "experience or skills, e.g. 'I have been a lawyer for 15 years', 'I worked at Goldman Sachs', 'in my " +
-               "current role I...'), or contains no question or request addressed to the candidate, or is too short or " +
-               "unintelligible, reply ONLY with: SKIP\n" +
-               "Only write an answer if the utterance is a question, request or scenario from the interviewer " +
-               "(recruiter or AI interviewer). When in doubt, reply SKIP. Never ask the candidate clarifying questions.\n" +
+       async function doneAnswer() {
+           if (!practice.block) return;
+           stopPracticeMic();
+           setPracticeStatus('⏳ Claude is reviewing your answer...');
+           await new Promise(function(r) { setTimeout(r, 700); });   // laisse arriver la dernière phrase
+           const q = practice.questions[practice.idx];
+           const answer = practice.parts.join(' ').trim();
+           practice.parts = [];
+           const block = practice.block;
+           block.querySelector('.my-answer').innerText = answer || '(nothing heard)';
+           const target = block.querySelector('.fb');
+           const system =
+               "You are an exacting interview coach for a senior lawyer applying to legal-AI contractor roles (training and " +
+               "evaluating AI on legal work). The candidate answered aloud; you receive a speech-to-text transcript, so ignore " +
+               "transcription errors and filler words. Judge the answer the way these recruiters do: (1) visible structure: the " +
+               "issue, named levers, a recommendation, an edge case; (2) precision: named market mechanisms, ALL formal conditions " +
+               "of a legal test, standard lists, industry-standard definitions; (3) usefulness: a repeatable method for " +
+               "AI-evaluation questions; inputs, approvals, one deliverable and success criteria for task-design questions; top " +
+               "line, decision ask and numbers for decision-maker questions; (4) exact counts when a number of items is asked; " +
+               "(5) no repetition; (6) legal accuracy: flag any error. Be specific and honest; do not flatter.\n" +
+               "Output EXACTLY this, nothing else:\n" +
+               "SCORE: n/10\n" +
+               "then 1 or 2 lines starting with '✔ ': what worked, in French, one short sentence each;\n" +
+               "then 2 to 4 lines starting with '✘ ': what was missing or wrong, in French, naming the exact missing lever, " +
+               "condition, step or error;\n" +
+               "then a line 'MODEL:' followed by a model answer in English that follows the rules below " +
+               "(ignore anything about SKIP or about the microphone).\n\n" +
+               ANSWER_FORMAT + contextBlock();
+           try {
+               await streamClaude(system, "Question:\n" + q + "\n\nCandidate's answer (transcript):\n" + (answer || "(no answer)"), 1800,
+                   function(t) { target.innerHTML = renderFeedback(t); });
+               setPracticeStatus('Tap ⏭ Next for the next question, or 🔁 Repeat to try again.');
+           } catch (e) { target.innerText = '❌ ' + e.message; setPracticeStatus('❌ Error'); }
+       }
+
+       function renderFeedback(text) {
+           const i = text.search(/^MODEL:/m);
+           const head = i >= 0 ? text.slice(0, i) : text;
+           const model = i >= 0 ? text.slice(i).replace(/^MODEL:\s*/, '') : '';
+           const top = head.split('\n').map(function(l) {
+               const t = l.trim(); if (!t) return '';
+               const cls = /^SCORE/i.test(t) ? 'fb-score' : (t.startsWith('✔') ? 'fb-good' : (t.startsWith('✘') ? 'fb-bad' : 'fb-line'));
+               return '<div class="' + cls + '">' + escapeHtml(t).replace(/\*\*([^*]+?)\*\*/g, '<strong>$1</strong>').replace(/\*+/g, '') + '</div>';
+           }).join('');
+           return top + (model ? '<div class="fb-model"><div class="suggestion-label" style="border:0;padding:0;margin:0 0 6px">Model answer:</div>' + renderPlan(model) + '</div>' : '');
+       }
+
+       // Règles de format des réponses (partagées par le mode direct et le mode entraînement)
+       const ANSWER_FORMAT =
                "STEP 2: write the answer in English, first person. The candidate glances at it and SPEAKS it live, " +
                "so it must sound like natural spoken English, not like a written list.\n" +
                "A) LENGTH depends on the question:\n" +
@@ -854,6 +1057,32 @@
                "- (second point, same pattern with 3 sub-bullets)\n" +
                "> That's why I'm **comfortable** owning complex projects. It's exactly what **this role** needs.\n" +
                "Be fast and direct. Start directly with the first '- ' line, no preamble, no title.\n\n" +
+               "";
+
+       // Appel à l'API Anthropic en streaming
+       async function askClaude(question, target, block, context, forced) {
+           const apiKey = document.getElementById('apiKey').value.trim();
+           const jobDesc = document.getElementById('jobDescription').value.trim();
+           const resume = document.getElementById('userResume').value.trim() || BUILT_IN_RESUME;
+
+           if (!apiKey) {
+               target.innerText = "⚠️ Please enter your Anthropic API key (top right).";
+               return;
+           }
+
+           const systemPrompt =
+               "LANGUAGE RULE: write your ENTIRE output in ENGLISH ONLY, whatever the language of the question, " +
+               "the resume or the job description. Never answer in French. " +
+               "You are a speaking coach helping a candidate during a live job interview conducted in English. " +
+               "The candidate will READ YOUR ANSWER ALOUD, word for word, so it must sound natural when spoken. " +
+               "STEP 1 (mandatory): the microphone may also pick up the candidate's own voice. Decide who is speaking. " +
+               "If the utterance is spoken by the CANDIDATE (first-person statement about themselves, their background, " +
+               "experience or skills, e.g. 'I have been a lawyer for 15 years', 'I worked at Goldman Sachs', 'in my " +
+               "current role I...'), or contains no question or request addressed to the candidate, or is too short or " +
+               "unintelligible, reply ONLY with: SKIP\n" +
+               "Only write an answer if the utterance is a question, request or scenario from the interviewer " +
+               "(recruiter or AI interviewer). When in doubt, reply SKIP. Never ask the candidate clarifying questions.\n" +
+               ANSWER_FORMAT +
                "=== JOB DESCRIPTION ===\n" + (jobDesc || "(not provided)") + "\n\n" +
                "=== CANDIDATE RESUME / SKILLS ===\n" + (resume || "(not provided)");
 
