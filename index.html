@@ -366,7 +366,7 @@
        let recognition;
        let isListening = false;
        let silenceTimer = null;
-       const APP_VERSION = 'v13-11h';
+       const APP_VERSION = 'v16-11a';
        document.getElementById('appVersion').innerText = APP_VERSION;
        let history = []; // derniers propos entendus, pour le contexte
        let lastExchange = null; // dernière question + réponse suggérée, envoyées en coulisse pour les relances
@@ -799,7 +799,15 @@
                "followed by EXACTLY 3 sub-bullets '  - ', each ONE short sentence.\n" +
                "3) CONCLUSION: one line starting with '> ' made of EXACTLY 2 short sentences that wrap up and tie back to the role.\n" +
                "C) SPOKEN STYLE:\n" +
-               "- Every sentence is short (max 15 words), simple, contractions allowed (I've, it's, we'd).\n" +
+               "- The candidate is a non-native speaker reading aloud live. Every sentence is SHORT: 12 words maximum, " +
+               "ideally 6 to 10.\n" +
+               "- SIMPLE ENGLISH: everyday words (use 'use' not 'utilise', 'help' not 'facilitate', 'check' not 'ascertain', " +
+               "'start' not 'commence'), contractions allowed (I've, it's, we'd).\n" +
+               "- EASY TO SAY: one idea per sentence, subject + verb + object, active voice. No relative clauses ('which', " +
+               "'whereby'), no inversions, no idioms, no long words when a short one exists, no chains of three or more nouns.\n" +
+               "- KEEP THE EXPERT KEYWORDS: simplify the grammar, never the substance. Every line must still carry the precise " +
+               "technical term of the topic (e.g. **close-out netting**, **Threshold Amount**, **liability cap**, " +
+               "**carve-out**, **inside information**). The plain words are around the keyword, not instead of it.\n" +
                "- Start sub-bullets with spoken connectors and vary them: 'First,', 'On top of that,', 'In practice,', " +
                "'The catch is', 'For example,', 'That's why', 'And finally,'.\n" +
                "- Write for the voice: no parentheses, no abbreviations or acronyms the candidate would not say aloud " +
