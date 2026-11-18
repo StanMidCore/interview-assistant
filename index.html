@@ -366,7 +366,7 @@
        let recognition;
        let isListening = false;
        let silenceTimer = null;
-       const APP_VERSION = 'v16-11a';
+       const APP_VERSION = 'v18-11a';
        document.getElementById('appVersion').innerText = APP_VERSION;
        let history = []; // derniers propos entendus, pour le contexte
        let lastExchange = null; // dernière question + réponse suggérée, envoyées en coulisse pour les relances
@@ -763,7 +763,7 @@
                "  point 3 = THE DELIVERABLE AND SUCCESS CRITERIA: its exact format, and how we know it is right " +
                "(measurable criteria, reviewer checklist).\n" +
                "- AI-EVALUATION question (reviewing or validating AI outputs, annotation guidelines, rubrics, grading criteria, " +
-               "span selection): treat it as TECHNICAL, but give a REPEATABLE METHOD that another reviewer could apply the same way:\n" +
+               "span selection, writing prompts or golden solutions, reviewing a model's reasoning or chain of thought, SFT or RLHF): treat it as TECHNICAL, but give a REPEATABLE METHOD that another reviewer could apply the same way:\n" +
                "  point 1 = THE CORE RULE OR METHOD (e.g. for omission checks: a clause inventory per contract type, then a " +
                "comparison with an expert reference issue list, scoring recall (what was missed) separately from precision " +
                "(what was wrong or invented); for span selection: the smallest span that is still complete, trigger plus condition " +
@@ -776,12 +776,27 @@
                "  point 3 = EDGE CASES AND A CONCRETE EXAMPLE (e.g. a clause split across sentences, a schedule election that " +
                "overrides the printed form, overlapping labels, a fragmented span, whether to include a carve-out or a cross-referenced definition), " +
                "with one short worked example.\n" +
-               "- TASK-DESIGN question (break real legal work into a defined task, write instructions or a brief for an AI or a " +
-               "junior, define a deliverable): treat it as TECHNICAL with these 3 points:\n" +
-               "  point 1 = THE INPUTS: scope (what is in and out), the source documents, the facts or assumptions given;\n" +
-               "  point 2 = THE PROCESS AND APPROVALS: the steps, who reviews, who signs off, when to escalate;\n" +
-               "  point 3 = THE SINGLE DELIVERABLE AND SUCCESS CRITERIA: name ONE expected output and how it is judged " +
-               "(complete, accurate, ready to hand off).\n" +
+               "  AI-TRAINING KNOWLEDGE to use in these answers (the goal is always that DIFFERENT PEOPLE GRADE THE SAME WAY):\n" +
+               "  * SFT versus RLHF: SFT teaches the model to imitate a golden answer, with prompt plus golden solution pairs, " +
+               "no rubric needed, best when there is one right answer and a tight format. RLHF teaches the model to prefer " +
+               "better-rated answers; the rubric defines what better means and drives the reward.\n" +
+               "  * Writing a PROMPT: anchor it to the project scope first (goal, allowed sources, out-of-scope items, output " +
+               "format, success criteria); state the specific outcome (e.g. 'identify four issues, each tied to a clause'); write " +
+               "explicit assumptions for anything people define differently (e.g. governing law, which party we act for, market " +
+               "standard); define the output structure so it can be checked quickly. SFT prompts stay concise; RLHF prompts are " +
+               "richer so each rubric point maps one to one to the prompt.\n" +
+               "  * Writing a RUBRIC (RLHF only): ATOMIC, one pass or fail check per line, never two checks in one; ONE TO ONE " +
+               "with the prompt, never add a requirement the prompt did not ask for; OBJECTIVE wording with exact strings, limits " +
+               "or lists (not 'properly cited'); MEASURABLE, quick and deterministic to verify (not 'recent sources').\n" +
+               "  * Writing a GOLDEN SOLUTION: the single source of truth that lets a reviewer follow my reasoning: restate the " +
+               "explicit assumptions, give the definitions or formulas used, then minimal checkable steps so anyone can reproduce " +
+               "it and spot the first error.\n" +
+               "  * Reviewing a model's CHAIN OF THOUGHT: if the model is wrong, find the FIRST BREAK in its logic, because every " +
+               "later step depends on it, then keep reading to catch any other error; typical errors are a definition mismatch " +
+               "(e.g. a defined term or a contractual deadline restated loosely), a misapplied rule or formula, and an arithmetic " +
+               "or rounding slip. If the model is right and my reference was wrong: acknowledge it, verify against the allowed " +
+               "sources and assumptions, then amend the golden solution and, in RLHF, the rubric. Assume good faith, test every " +
+               "claim against the scope, and give a crisp fix.\n" +
                "- DECISION-MAKER question (summary for management, executive summary, status update, risk memo, how to present " +
                "a negotiation outcome): treat it as TECHNICAL with these 3 points:\n" +
                "  point 1 = THE TOP LINE AND THE DECISION ASK: one-sentence conclusion, then exactly what I ask them to approve, " +
