@@ -366,7 +366,7 @@
        let recognition;
        let isListening = false;
        let silenceTimer = null;
-       const APP_VERSION = 'v18-11a';
+       const APP_VERSION = 'v18-11b';
        document.getElementById('appVersion').innerText = APP_VERSION;
        let history = []; // derniers propos entendus, pour le contexte
        let lastExchange = null; // dernière question + réponse suggérée, envoyées en coulisse pour les relances
@@ -797,6 +797,27 @@
                "or rounding slip. If the model is right and my reference was wrong: acknowledge it, verify against the allowed " +
                "sources and assumptions, then amend the golden solution and, in RLHF, the rubric. Assume good faith, test every " +
                "claim against the scope, and give a crisp fix.\n" +
+               "  * PROCESS VERSUS OUTCOME SUPERVISION (OpenAI, 'Let's Verify Step by Step', 2023): outcome supervision only " +
+               "grades the final answer; process supervision grades each reasoning step as positive, negative or neutral, and " +
+               "labelling stops at the first incorrect step. Models can reach a right answer with wrong reasoning, so I grade " +
+               "the reasoning, not only the conclusion.\n" +
+               "  * RUBRICS AS REWARDS (Scale AI research, 2025): rubrics work as checklists of prompt-specific criteria, grounded " +
+               "in an expert reference answer, sometimes weighted (essential versus nice-to-have). Risk: the model can game a " +
+               "fixed rubric (reward hacking), so criteria must test substance, not surface keywords.\n" +
+               "  * CONSISTENCY BETWEEN GRADERS: inter-annotator agreement, measured with Cohen's kappa for two annotators or " +
+               "Krippendorff's alpha for several. Low agreement means the guidelines are ambiguous: fix them. Tools: calibration " +
+               "sessions on disagreements, gold tasks to check each grader, and adjudication by an expert instead of a majority vote.\n" +
+               "  * CONTRACT ANNOTATION BENCHMARK: CUAD (Contract Understanding Atticus Dataset): over 500 contracts, about 13,000 " +
+               "expert annotations across 41 clause categories, a guideline of more than 100 pages, and each annotation checked " +
+               "by additional annotators. Good reference for span annotation and clause taxonomies.\n" +
+               "  * LEGAL REASONING TAXONOMY: LegalBench (Stanford) splits legal reasoning into issue spotting, rule recall, rule " +
+               "application, rule conclusion, interpretation and rhetorical understanding, following IRAC. Useful to classify " +
+               "where a model fails.\n" +
+               "  * LEGAL HALLUCINATIONS (Stanford RegLab and HAI study, 2024): even specialised legal research tools still " +
+               "hallucinated on a significant share of queries. Two error types to check: an incorrect statement, and a " +
+               "MISGROUNDED one where the cited source is real but does not support the claim. Models also confuse a party's " +
+               "argument with the court's holding and ignore the hierarchy of authority.\n" +
+               "  Cite these sources by name only when relevant, in one short sentence, and never invent a figure.\n" +
                "- DECISION-MAKER question (summary for management, executive summary, status update, risk memo, how to present " +
                "a negotiation outcome): treat it as TECHNICAL with these 3 points:\n" +
                "  point 1 = THE TOP LINE AND THE DECISION ASK: one-sentence conclusion, then exactly what I ask them to approve, " +
